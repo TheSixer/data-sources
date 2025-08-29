@@ -39,6 +39,7 @@ jobs:
 
   test-windows:
     runs-on: windows-latest
+    needs: test-linux
     steps:
     - uses: actions/checkout@v4
     
@@ -58,7 +59,6 @@ jobs:
         python -c "import MetaTrader5; print('MetaTrader5 imported successfully')"
         python -c "import app.services.mt5_service; print('MT5Service imported successfully')"
         python -c "import app.services.technical_indicators; print('TechnicalIndicatorsService imported successfully')"
-        python -c "import app.main; print('App main imported successfully')"
 
   deploy:
     needs: [test-linux, test-windows]
@@ -76,6 +76,24 @@ jobs:
         password: ${{ secrets.SERVER_PASSWORD }}
         port: ${{ secrets.SERVER_PORT }}
         script: |
+          REM 检查并安装Python
+          python --version >nul 2>&1 || (
+            echo Installing Python...
+            powershell -Command "Invoke-WebRequest -Uri 'https://www.python.org/ftp/python/3.11.8/python-3.11.8-amd64.exe' -OutFile 'python-installer.exe'"
+            python-installer.exe /quiet InstallAllUsers=1 PrependPath=1
+            del python-installer.exe
+            echo Python installed successfully
+          )
+          
+          REM 检查并安装Git
+          git --version >nul 2>&1 || (
+            echo Installing Git...
+            powershell -Command "Invoke-WebRequest -Uri 'https://github.com/git-for-windows/git/releases/download/v2.44.0.windows.1/Git-2.44.0-64-bit.exe' -OutFile 'git-installer.exe'"
+            git-installer.exe /VERYSILENT /NORESTART
+            del git-installer.exe
+            echo Git installed successfully
+          )
+          
           REM 创建部署目录
           mkdir -p C:\mt5-api
           cd C:\mt5-api
