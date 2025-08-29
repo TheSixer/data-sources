@@ -31,14 +31,9 @@ jobs:
         # 测试基本导入
         python -c "import fastapi; print('FastAPI imported successfully')"
         python -c "import uvicorn; print('Uvicorn imported successfully')"
-        python -c "import pydantic; print('Pydantic imported successfully')"
-        python -c "import pandas; print('Pandas imported successfully')"
-        python -c "import numpy; print('NumPy imported successfully')"
-        
-        # 测试应用基本结构
-        python -c "from app.config import settings; print('Config imported successfully')"
-        python -c "from app.models import *; print('Models imported successfully')"
-        python -c "from app.exceptions import *; print('Exceptions imported successfully')"
+        python -c "import app.main; print('App main imported successfully')"
+        python -c "import app.services.mt5_service; print('MT5Service imported successfully')"
+        python -c "import app.services.technical_indicators; print('TechnicalIndicatorsService imported successfully')"
 
   test-windows:
     runs-on: windows-latest
@@ -57,10 +52,10 @@ jobs:
     
     - name: Run full tests
       run: |
-        # 测试所有导入（包括MetaTrader5）
+        # 测试完整功能
         python -c "import MetaTrader5; print('MetaTrader5 imported successfully')"
-        python -c "from app.services.mt5_service import MT5Service; print('MT5Service imported successfully')"
-        python -c "from app.services.technical_indicators import TechnicalIndicatorsService; print('TechnicalIndicatorsService imported successfully')"
+        python -c "import app.services.mt5_service; print('MT5Service imported successfully')"
+        python -c "import app.services.technical_indicators; print('TechnicalIndicatorsService imported successfully')"
 
   deploy:
     needs: [test-linux, test-windows]
@@ -70,54 +65,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     
-    - name: Set up Python ${{ env.PYTHON_VERSION }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-    
-    - name: Install deployment dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install requests cryptography paramiko PyNaCl
-    
-    - name: Create deployment package
-      run: |
-        mkdir -p deployment
-        cp -r app deployment/
-        cp requirements.txt deployment/
-        cp README.md deployment/
-        cp env.example deployment/
-        
-        # Create startup script
-        cat > deployment/start.bat << 'EOF'
-        @echo off
-        echo Starting MT5 Data Source API...
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        python -m app.main
-        EOF
-        
-        # Create service script
-        cat > deployment/install_service.bat << 'EOF'
-        @echo off
-        echo Installing MT5 Data Source API as Windows Service...
-        nssm install "MT5DataAPI" "C:\Python311\python.exe" "-m app.main"
-        nssm set "MT5DataAPI" AppDirectory "%~dp0"
-        nssm set "MT5DataAPI" Description "MT5 Data Source API Service"
-        nssm set "MT5DataAPI" Start SERVICE_AUTO_START
-        nssm start "MT5DataAPI"
-        echo Service installed and started successfully!
-        EOF
-        
-        # Create environment file
-        cat > deployment/.env << 'EOF'
-        API_KEY=${{ secrets.API_KEY }}
-        MT5_LOGIN=${{ secrets.MT5_LOGIN }}
-        MT5_PASSWORD=${{ secrets.MT5_PASSWORD }}
-        MT5_SERVER=${{ secrets.MT5_SERVER }}
-        MT5_TIMEOUT=${{ secrets.MT5_TIMEOUT }}
-        EOF
-    
     - name: Deploy to Windows Server
       uses: appleboy/ssh-action@v1.0.3
       with:
@@ -126,56 +73,66 @@ jobs:
         password: ${{ secrets.SERVER_PASSWORD }}
         port: ${{ secrets.SERVER_PORT }}
         script: |
-          REM Create deployment directory
+          REM 创建部署目录
           mkdir -p C:\mt5-api
           cd C:\mt5-api
           
-          REM Stop existing service if running
+          REM 停止现有服务
           nssm stop "MT5DataAPI" 2>nul || echo "Service not running"
           nssm remove "MT5DataAPI" confirm 2>nul || echo "Service not installed"
           
-          REM Backup existing deployment
+          REM 备份现有部署
           if exist "app" (
             rmdir /s /q backup 2>nul
             mkdir backup
             xcopy /s /e app backup\app\
-            copy requirements.txt backup\
+            copy requirements.txt backup\ 2>nul
             copy .env backup\ 2>nul
           )
           
-          REM Clean deployment directory
+          REM 清理部署目录
           rmdir /s /q app 2>nul
           del requirements.txt 2>nul
           del .env 2>nul
           del start.bat 2>nul
           del install_service.bat 2>nul
-    
-    - name: Upload deployment files
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USERNAME }}
-        password: ${{ secrets.SERVER_PASSWORD }}
-        port: ${{ secrets.SERVER_PORT }}
-        source: "deployment/*"
-        target: "C:/mt5-api"
-        strip_components: 1
-    
-    - name: Install and start service
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USERNAME }}
-        password: ${{ secrets.SERVER_PASSWORD }}
-        port: ${{ secrets.SERVER_PORT }}
-        script: |
-          cd C:\mt5-api
           
-          REM Install Python dependencies
+          REM 克隆最新代码
+          git clone https://github.com/TheSixer/data-sources.git temp-repo
+          xcopy /s /e temp-repo\app app\
+          copy temp-repo\requirements.txt .
+          copy temp-repo\env.example .env
+          rmdir /s /q temp-repo
+          
+          REM 创建启动脚本
+          echo @echo off > start.bat
+          echo echo Starting MT5 Data Source API... >> start.bat
+          echo python -m pip install --upgrade pip >> start.bat
+          echo pip install -r requirements.txt >> start.bat
+          echo python -m app.main >> start.bat
+          
+          REM 创建服务安装脚本
+          echo @echo off > install_service.bat
+          echo echo Installing MT5 Data Source API as Windows Service... >> install_service.bat
+          echo nssm install "MT5DataAPI" "C:\Python311\python.exe" "-m app.main" >> install_service.bat
+          echo nssm set "MT5DataAPI" AppDirectory "%~dp0" >> install_service.bat
+          echo nssm set "MT5DataAPI" Description "MT5 Data Source API Service" >> install_service.bat
+          echo nssm set "MT5DataAPI" Start SERVICE_AUTO_START >> install_service.bat
+          echo nssm start "MT5DataAPI" >> install_service.bat
+          echo echo Service installed and started successfully! >> install_service.bat
+          
+          REM 更新环境变量
+          echo API_KEY=${{ secrets.API_KEY }} > .env
+          echo MT5_LOGIN=${{ secrets.MT5_LOGIN }} >> .env
+          echo MT5_PASSWORD=${{ secrets.MT5_PASSWORD }} >> .env
+          echo MT5_SERVER=${{ secrets.MT5_SERVER }} >> .env
+          echo MT5_TIMEOUT=${{ secrets.MT5_TIMEOUT }} >> .env
+          
+          REM 安装Python依赖
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           
-          REM Install NSSM if not available
+          REM 安装NSSM（如果不存在）
           if not exist "C:\nssm\nssm.exe" (
             echo Installing NSSM...
             mkdir C:\nssm
@@ -186,39 +143,32 @@ jobs:
             del C:\nssm\nssm.zip
           )
           
-          REM Add NSSM to PATH
+          REM 添加NSSM到PATH
           setx PATH "%PATH%;C:\nssm" /M
           
-          REM Install and start service
+          REM 安装并启动服务
           call install_service.bat
           
-          REM Wait for service to start
+          REM 等待服务启动
           timeout /t 10 /nobreak
           
-          REM Check service status
+          REM 检查服务状态
           nssm status "MT5DataAPI"
           
-          REM Test API endpoint
+          REM 测试API端点
           curl -f http://localhost:3020/ || echo "API not responding yet"
-    
-    - name: Health check
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USERNAME }}
-        password: ${{ secrets.SERVER_PASSWORD }}
-        port: ${{ secrets.SERVER_PORT }}
-        script: |
-          echo "Waiting for API to be ready..."
+          
+          REM 健康检查
+          echo Waiting for API to be ready...
           for /l %%i in (1,1,30) do (
             curl -f http://localhost:3020/ >nul 2>&1 && (
-              echo "API is ready!"
+              echo API is ready!
               curl http://localhost:3020/
               exit /b 0
             ) || (
-              echo "Attempt %%i: API not ready yet..."
+              echo Attempt %%i: API not ready yet...
               timeout /t 2 /nobreak >nul
             )
           )
-          echo "API health check failed"
+          echo API health check failed
           exit /b 1
