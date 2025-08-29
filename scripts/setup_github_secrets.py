@@ -24,7 +24,7 @@ def load_env_file(env_path):
         'MT5_SERVER': os.getenv('MT5_SERVER'),
         'MT5_TIMEOUT': os.getenv('MT5_TIMEOUT'),
         'SERVER_HOST': '47.116.221.184',
-        'SERVER_USERNAME': 'root',
+        'SERVER_USERNAME': 'Administrator',
         'SERVER_PASSWORD': 'Longjia@3713',
         'SERVER_PORT': '22'
     }

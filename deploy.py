@@ -242,7 +242,7 @@ def main():
         "owner": "TheSixer",
         "repo": "data-source", 
         "server_host": "47.116.221.184",
-        "server_username": "root",
+        "server_username": "Administrator",
         "server_password": "Longjia@3713"
     }
     
