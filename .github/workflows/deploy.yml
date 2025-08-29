@@ -87,7 +87,7 @@ jobs:
         cp -r app deployment/
         cp requirements.txt deployment/
         cp README.md deployment/
-        cp .env.example deployment/
+        cp env.example deployment/
         
         # Create startup script
         cat > deployment/start.bat << 'EOF'
