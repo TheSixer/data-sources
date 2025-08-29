@@ -60,7 +60,7 @@ jobs:
         # 测试所有导入（包括MetaTrader5）
         python -c "import MetaTrader5; print('MetaTrader5 imported successfully')"
         python -c "from app.services.mt5_service import MT5Service; print('MT5Service imported successfully')"
-        python -c "from app.services.technical_indicators import TechnicalIndicators; print('TechnicalIndicators imported successfully')"
+        python -c "from app.services.technical_indicators import TechnicalIndicatorsService; print('TechnicalIndicatorsService imported successfully')"
 
   deploy:
     needs: [test-linux, test-windows]
