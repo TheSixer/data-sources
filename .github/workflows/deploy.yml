@@ -11,7 +11,7 @@ env:
   PYTHON_VERSION: '3.11'
 
 jobs:
-  test:
+  test-linux:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -21,17 +21,49 @@ jobs:
       with:
         python-version: ${{ env.PYTHON_VERSION }}
     
-    - name: Install dependencies
+    - name: Install basic dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install fastapi uvicorn python-dotenv pydantic pydantic-settings pandas numpy python-multipart requests cryptography paramiko pytest PyNaCl
+    
+    - name: Run basic tests
+      run: |
+        # 测试基本导入
+        python -c "import fastapi; print('FastAPI imported successfully')"
+        python -c "import uvicorn; print('Uvicorn imported successfully')"
+        python -c "import pandas; print('Pandas imported successfully')"
+        python -c "import numpy; print('NumPy imported successfully')"
+        
+        # 跳过MetaTrader5相关测试，因为它在Linux环境中不可用
+        echo "Skipping MetaTrader5 tests on Linux environment"
+
+  test-windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ env.PYTHON_VERSION }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+    
+    - name: Install all dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
-    - name: Run tests
+    - name: Run full tests
       run: |
+        # 测试所有导入包括MetaTrader5
+        python -c "import MetaTrader5; print('MetaTrader5 imported successfully')"
+        python -c "import fastapi; print('FastAPI imported successfully')"
+        python -c "import uvicorn; print('Uvicorn imported successfully')"
+        
+        # 运行完整的测试
         python -m pytest test_app.py -v
 
   deploy:
-    needs: test
+    needs: [test-linux, test-windows]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     
