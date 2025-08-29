@@ -1,0 +1,75 @@
+---
+description: MT5 Data Source API项目初始化规则
+globs: ["**/*.py", "**/*.md", "**/*.json", "**/*.txt"]
+alwaysApply: true
+---
+
+# Cursor Project Rules for MT5 Data Source API
+
+## 环境管理
+- 运行前必须先激活conda环境: `conda activate py311`
+- 项目使用Python 3.11版本
+- 所有依赖包通过requirements.txt管理
+
+## 代码规范
+- 遵循PEP 8 Python代码规范
+- 使用类型注解
+- 文件控制在400行以内
+- 完善的文档字符串
+
+## 项目结构
+- 模块化企业级架构
+- 按功能分层：config, models, exceptions, middleware, services, api
+- 每个模块职责单一，耦合度低
+
+## 开发流程
+1. 激活环境: `conda activate py311`
+2. 安装依赖: `pip install -r requirements.txt`
+3. 配置环境变量: 复制env.example为.env并配置
+4. 启动服务: `python -m app.main` 或 `uvicorn app.main:app --reload`
+
+## API规范
+- RESTful风格接口
+- 统一的错误处理机制
+- API密钥验证
+- 标准HTTP状态码
+
+## 安全要求
+- 敏感信息通过环境变量配置
+- API密钥验证中间件
+- 输入参数验证
+
+## 测试要求
+- 接口功能测试
+- 异常处理测试
+- 性能测试
+
+## 部署要求
+- 支持Docker容器化
+- 环境变量配置
+- 日志记录
+- 健康检查接口
+
+## 文件命名规范
+- Python文件使用snake_case命名
+- 类名使用PascalCase命名
+- 常量使用UPPER_CASE命名
+- 函数和变量使用snake_case命名
+
+## 导入规范
+- 标准库导入在最前面
+- 第三方库导入在中间
+- 本地模块导入在最后
+- 每组导入之间用空行分隔
+
+## 注释规范
+- 使用中文注释
+- 类和函数必须有文档字符串
+- 复杂逻辑需要行内注释
+- 使用Google风格的文档字符串
+
+## 错误处理
+- 使用自定义异常类
+- 提供详细的错误信息
+- 记录错误日志
+- 返回合适的HTTP状态码
