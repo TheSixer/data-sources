@@ -31,8 +31,11 @@ jobs:
         # 测试基本导入
         python -c "import fastapi; print('FastAPI imported successfully')"
         python -c "import uvicorn; print('Uvicorn imported successfully')"
-        python -c "import app.main; print('App main imported successfully')"
-        python -c "import app.services.mt5_service; print('MT5Service imported successfully')"
+        python -c "import app.config; print('Config imported successfully')"
+        python -c "import app.models; print('Models imported successfully')"
+        python -c "import app.exceptions; print('Exceptions imported successfully')"
+        python -c "import app.middleware; print('Middleware imported successfully')"
+        python -c "import app.utils; print('Utils imported successfully')"
         python -c "import app.services.technical_indicators; print('TechnicalIndicatorsService imported successfully')"
 
   test-windows:
@@ -56,6 +59,7 @@ jobs:
         python -c "import MetaTrader5; print('MetaTrader5 imported successfully')"
         python -c "import app.services.mt5_service; print('MT5Service imported successfully')"
         python -c "import app.services.technical_indicators; print('TechnicalIndicatorsService imported successfully')"
+        python -c "import app.main; print('App main imported successfully')"
 
   deploy:
     needs: [test-linux, test-windows]
