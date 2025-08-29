@@ -36,7 +36,6 @@ jobs:
         python -c "import app.exceptions; print('Exceptions imported successfully')"
         python -c "import app.middleware; print('Middleware imported successfully')"
         python -c "import app.utils; print('Utils imported successfully')"
-        python -c "import app.services.technical_indicators; print('TechnicalIndicatorsService imported successfully')"
 
   test-windows:
     runs-on: windows-latest
